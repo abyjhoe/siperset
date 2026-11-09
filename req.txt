@@ -27,6 +27,8 @@ A. KETENTUAN UMUM
 14. Nilai uang menggunakan DECIMAL, bukan FLOAT/DOUBLE.
 15. Nama tabel dan kolom menggunakan snake_case.
 
+16. Pengujian Endpoint REST API ini melalui Postman / Apidog / Atau sejenisnya.
+
 Format umum response sukses:
 
 { “status”: true, “message”: “Data berhasil diambil”, “data”: {},
