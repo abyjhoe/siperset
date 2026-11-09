@@ -1,0 +1,132 @@
+======================================================================
+A. KETENTUAN UMUM
+======================================================================
+
+1.  Aplikasi menyediakan REST API untuk pengelolaan:
+    a.  Persediaan barang habis pakai (consumable).
+    b.  Aset tetap hasil belanja modal (asset).
+2.  Backend wajib menggunakan CodeIgniter 4 dan MySQL.
+3.  Format request dan response menggunakan JSON, kecuali upload file
+    jika kelak ditambahkan.
+4.  Semua endpoint selain Register, Login, dan Reset Password wajib
+    menggunakan autentikasi Bearer Token.
+5.  Gunakan HTTP status code yang sesuai.
+6.  Validasi wajib dilakukan di sisi server.
+7.  Gunakan transaksi database (DB transaction) untuk proses yang
+    mengubah lebih dari satu tabel.
+8.  Jangan menghitung seluruh data di PHP jika perhitungan dapat
+    dikerjakan melalui query SQL.
+9.  Semua daftar data wajib mendukung pagination.
+10. Gunakan prepared statement / Query Builder agar aman dari SQL
+    injection.
+11. Simpan password menggunakan password_hash() dan verifikasi dengan
+    password_verify(). Jangan menyimpan password asli.
+12. Token reset password disimpan dalam bentuk hash dan memiliki masa
+    berlaku.
+13. Tanggal menggunakan format YYYY-MM-DD atau ISO 8601 sesuai konteks.
+14. Nilai uang menggunakan DECIMAL, bukan FLOAT/DOUBLE.
+15. Nama tabel dan kolom menggunakan snake_case.
+
+Format umum response sukses:
+
+{ “status”: true, “message”: “Data berhasil diambil”, “data”: {},
+“meta”: {} }
+
+Format umum response gagal:
+
+{ “status”: false, “message”: “Validasi gagal”, “errors”: { “email”:
+“Format email tidak valid” } }
+
+Catatan: - Properti “meta” dapat dihilangkan jika tidak diperlukan. -
+Response list menggunakan data berupa array. - Jangan mengirim
+password_hash atau token reset dalam response. - Jangan menganggap HTTP
+200 sebagai satu-satunya status sukses.
+
+======================================================================
+B. DAFTAR ENDPOINT REST API
+======================================================================
+
+BASE URL: /api/v1
+
+  -----------------
+  B1. AUTENTIKASI
+  -----------------
+
+1.  REGISTER Method : POST URL : /api/v1/auth/register Auth : Tidak
+
+    Request: { “name”: “Budi”, “email”: “budi@example.com”, “password”:
+    “Rahasia123!”, “password_confirmation”: “Rahasia123!”,
+    “department_id”: 2 }
+
+    Ketentuan:
+
+    -   Email harus unik.
+    -   Password wajib memenuhi aturan minimal keamanan.
+    -   department_id harus mengacu pada department yang tersedia.
+    -   Role pengguna ditentukan oleh sistem, bukan bebas dikirim
+        client.
+    -   Password disimpan dalam bentuk hash.
+
+    Response sukses (201): { “status”: true, “message”: “Registrasi
+    berhasil”, “data”: { “id”: 15, “name”: “Budi”, “email”:
+    “budi@example.com”, “department_id”: 2 } }
+
+2.  LOGIN Method : POST URL : /api/v1/auth/login Auth : Tidak
+
+    Request: { “email”: “budi@example.com”, “password”: “Rahasia123!” }
+
+    Response sukses (200): { “status”: true, “message”: “Login
+    berhasil”, “data”: { “access_token”: “TOKEN_CONTOH”, “token_type”:
+    “Bearer”, “expires_at”: “2026-11-09T18:00:00+08:00”, “user”: { “id”:
+    15, “name”: “Budi”, “email”: “budi@example.com”, “role”: “staff”,
+    “department”: “Sub Bagian Umum” } } }
+
+    Ketentuan:
+
+    -   Password diverifikasi menggunakan password_verify().
+    -   Token harus acak dan sulit ditebak.
+    -   Simpan hash token di database, bukan token mentah.
+    -   Token memiliki masa berlaku.
+    -   Response tidak boleh membocorkan password atau hash.
+
+3.  LOGOUT Method : POST URL : /api/v1/auth/logout Auth : Bearer Token
+
+    Request: {}
+
+    Response: { “status”: true, “message”: “Logout berhasil” }
+
+    Ketentuan:
+
+    -   Token aktif milik pengguna harus dicabut/dihapus.
+
+4.  RESET PASSWORD - MEMINTA TOKEN Method : POST URL :
+    /api/v1/auth/forgot-password Auth : Tidak
+
+    Request: { “email”: “budi@example.com” }
+
+    Response: { “status”: true, “message”: “Jika email terdaftar,
+    instruksi reset akan dikirim” }
+
+    Ketentuan:
+
+    -   Jangan mengungkap apakah email terdaftar atau tidak.
+    -   Untuk tugas praktikum, token boleh ditampilkan melalui mekanisme
+        simulasi atau dicatat pada log pengembangan, bukan pada
+        produksi.
+    -   Token disimpan sebagai hash dan memiliki waktu kedaluwarsa.
+
+5.  RESET PASSWORD - KONFIRMASI Method : POST URL :
+    /api/v1/auth/reset-password Auth : Tidak
+
+    Request: { “email”: “budi@example.com”, “token”: “TOKEN_RESET”,
+    “password”: “PasswordBaru123!”, “password_confirmation”:
+    “PasswordBaru123!” }
+
+    Response: { “status”: true, “message”: “Password berhasil diubah” }
+
+    Ketentuan:
+
+    -   Token harus cocok, belum digunakan, dan belum kedaluwarsa.
+    -   Token hanya dapat digunakan satu kali.
+    -   Setelah reset berhasil, token reset harus ditandai digunakan.
+    -   Idealnya seluruh access token lama pengguna dicabut.
